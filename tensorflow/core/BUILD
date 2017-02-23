@@ -116,6 +116,8 @@ load(
     "//third_party/mkl:build_defs.bzl",
     "if_mkl",
 )
+load("@local_config_sycl//sycl:build_defs.bzl", "if_sycl")
+
 # -----------------------------------------------------------------------------
 # Public targets
 
@@ -172,6 +174,15 @@ ADDITIONAL_CORE_PROTO_SRCS = [
     "util/event.proto",
     "util/test_log.proto",
 ]
+
+tf_proto_library(
+    name = "reader_base_proto",
+    srcs = ["framework/reader_base.proto"],
+    cc_api_version = 2,
+    go_api_version = 2,
+    java_api_version = 2,
+    visibility = ["//visibility:public"],
+)
 
 tf_proto_library(
     name = "protos_all",
@@ -394,6 +405,18 @@ tf_cuda_library(
     }),
     visibility = ["//visibility:public"],
     deps = [":framework_internal"],
+)
+
+cc_library(
+    name = "reader_base",
+    srcs = ["framework/reader_base.cc"],
+    hdrs = ["framework/reader_base.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":framework",
+        ":lib",
+        ":reader_base_proto_cc",
+    ],
 )
 
 tf_proto_library_cc(
@@ -635,6 +658,7 @@ cc_library(
         "//tensorflow/core/kernels:control_flow_ops",
         "//tensorflow/core/kernels:ctc_ops",
         "//tensorflow/core/kernels:data_flow",
+        "//tensorflow/core/kernels:debug_ops",
         "//tensorflow/core/kernels:fake_quant_ops",
         "//tensorflow/core/kernels:function_ops",
         "//tensorflow/core/kernels:image",
@@ -728,7 +752,7 @@ cc_library(
         "//tensorflow/core/kernels:ops_testutil",
         "//tensorflow/core/kernels:ops_util",
         "//tensorflow/core/platform/default/build_config:gtest",
-    ],
+    ] + if_sycl([":sycl_runtime"]),
 )
 
 # This is a link-only library to provide a DirectSession
@@ -796,6 +820,7 @@ filegroup(
             "**/*main.cc",
             "debug/**/*",
             "framework/op_gen_*",
+            "framework/reader_base.*",
             "graph/dot.*",
             "lib/jpeg/**/*",
             "lib/png/**/*",
@@ -1303,6 +1328,7 @@ tf_cuda_library(
             "util/reporter.cc",
             "framework/fake_input.*",
             "framework/op_gen_lib.*",
+            "framework/reader_base.*",
             "util/memmapped_file_system.*",
             "util/memmapped_file_system_writer.*",
             "util/version_info.cc",
@@ -1352,6 +1378,7 @@ cc_header_only_library(
     visibility = ["//visibility:public"],
     deps = [
         ":framework",
+        ":reader_base",
     ],
 )
 
@@ -1708,7 +1735,6 @@ tf_cc_tests(
         "platform/net_test.cc",
         "platform/port_test.cc",
         "platform/profile_utils/cpu_utils_test.cc",
-        "platform/setround_test.cc",
         "platform/subprocess_test.cc",
     ],
     deps = [
@@ -1734,6 +1760,24 @@ tf_cc_test(
         ":test",
         ":test_main",
         "//third_party/eigen3",
+    ],
+)
+
+tf_cc_test(
+    name = "platform_setround_test",
+    size = "small",
+    srcs = ["platform/setround_test.cc"],
+    tags = [
+        "noasan",
+        "nomsan",
+        "notsan",
+    ],
+    deps = [
+        ":lib",
+        ":lib_internal",
+        ":lib_test_internal",
+        ":test",
+        ":test_main",
     ],
 )
 

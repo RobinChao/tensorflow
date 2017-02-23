@@ -7,7 +7,7 @@ exports_files(["LICENSE"])
 
 package(default_visibility = [
     "//engedu/ml/tf_from_scratch:__pkg__",
-    "//tensorflow:__subpackages__",
+    "//tensorflow:internal",
 ])
 
 load("//tensorflow:tensorflow.bzl", "py_test")
@@ -652,7 +652,6 @@ py_test(
     size = "medium",
     srcs = ["python/learn/estimators/kmeans_test.py"],
     srcs_version = "PY2AND3",
-    tags = ["manual"],  # b/33965977
     deps = [
         ":learn",
         "//tensorflow/contrib/factorization:factorization_py",
